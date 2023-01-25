@@ -1,39 +1,73 @@
+import { format, formatDistanceToNow } from 'date-fns'
+import ptBR from 'date-fns/locale/pt-BR'
+import { useState } from 'react'
+
 import { Avatar } from './Avatar'
 import { Comment } from './Comment'
 import styles from './Post.module.css'
 
-export function Post() {
+export function Post({ author, publishedAt, content }) { 
+    const [comments, setComments] = useState([])
+    const [newCommentText, setNewCommentText] = useState('')
+
+
+    const publishedDateFormatted = format(publishedAt, "d 'de' LLLL 'às' HH:mm'h'", {
+        locale: ptBR,
+    })
+
+    //pra calcular a distância do post para o horário atual
+    const publishedDateRelativeToNow = formatDistanceToNow(publishedAt, {
+        locale: ptBR,
+        addSuffix: true, //gerar prefixo.
+    })
+
+    function handleCreateNewComment(){
+        event.preventDefault();
+        setComments([...comments, newCommentText]) // pega todos os comments com o spread. e depois adiciona um comentário a partir do textarea.
+        setNewCommentText(''); //seta o valor da textarea como vazio.
+    }
+
+    //função que pega o conteúdo dentro do textarea
+    function handleNewCommentChange() {
+        setNewCommentText(event.target.value);
+    }
+
     return (
         <article className={styles.post}>
             <header>
                 <div className={styles.author}>
-                    <Avatar 
-                        src="https://xesque.rocketseat.dev/users/avatar/profile-adefb756-39fa-49f6-ac28-7325573cece4-1673635519610.jpg" />
+                    <Avatar src={author.avatarUrl}/>
                     <div className={styles.authorInfo}>
-                        <strong>Nina Fernandes</strong>
-                        <span>Desenvolvedora Front-end</span>
+                        <strong>{author.name}</strong>
+                        <span>{author.role}</span>
                     </div>
                 </div>
-                <time title="24 de Janeiro às 17:24" dateTime="2023-01-24 17:24:30">Publicado há 1h</time>
+
+                <time title={publishedDateFormatted} dateTime={publishedAt.toISOString()}>
+                    {publishedDateRelativeToNow}
+                </time>
             </header>
 
-            <div className={styles.content}>
-                
-                <p>Fala galeraa 👋</p>
-                <p>Acabei de subir mais um projeto no meu portifa. É um projeto que fiz no NLW Return, evento da Rocketseat. O nome do projeto é DoctorCare 🚀</p>
-                <p><a href="#">nina.design/doctorcare</a></p>
-                <p>
-                    <a href='#'>#novoprojeto</a>{' '}
-                    <a href='#'>#nlw</a>{' '}
-                    <a href='#'>#rocketseat</a>
-                </p>
+            <div className={styles.content}> 
+            {/* mapeando: se a linha for do tipo paragrafo (puxa do app.jsx), imprime o conteúdo. 
+            se for do tipo link, imprime o link. */}
+                {content.map(line => {
+                    if (line.type === 'paragraph'){
+                        return <p>{line.content}</p>;
+                    } else if (line.type === 'link'){
+                        return <p><a href="#">{line.content}</a></p>
+                    }
+                })}
             </div>
 
-            <form className={styles.commentForm}>
+            <form onSubmit={handleCreateNewComment} className={styles.commentForm}>
                 <strong>Deixe seu feedback</strong>
 
                 <textarea 
-                    placeholder="Deixe um comentário"
+                    placeholder="Deixe um comentário..."
+                    name="comment"
+                    value={newCommentText}
+                    onChange={handleNewCommentChange}
                 />
                 <footer>
                     <button type="submit">Publicar</button>    
@@ -41,9 +75,9 @@ export function Post() {
             </form>
 
             <div className={styles.commentList}>
-                <Comment />
-                <Comment />
-                <Comment />
+                {comments.map(comment => {
+                    return <Comment content={comment}/>
+                })}
             </div>
         </article>
     )
